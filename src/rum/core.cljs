@@ -4,6 +4,7 @@
   (:require
    [cljsjs.react]
    [cljsjs.react.dom]
+   ["react-dom/client" :as rdc]
    [goog.object :as gobj]
    [goog.functions :as fns]
    [clojure.set :as set]
@@ -273,18 +274,29 @@
 (defn mount
   "Add element to the DOM tree. Idempotent. Subsequent mounts will just update element."
   [element node]
-  (js/ReactDOM.render element node)
-  nil)
+  (if js/ReactDOM.createRoot
+    (if node.render
+      (.render node element)
+      (let [root (rdc/createRoot node)]
+        (.render root element)
+        root))
+    (do
+      (js/ReactDOM.render element node)
+      nil)))
 
 (defn unmount
   "Removes component from the DOM tree."
   [node]
-  (js/ReactDOM.unmountComponentAtNode node))
+  (if node.unmount
+    (.unmount node)
+    (js/ReactDOM.unmountComponentAtNode node)))
 
 (defn hydrate
   "Same as [[mount]] but must be called on DOM tree already rendered by a server via [[render-html]]."
   [element node]
-  (js/ReactDOM.hydrate element node))
+  (if js/ReactDOM.hydrateRoot
+    (rdc/hydrateRoot node element)
+    (js/ReactDOM.hydrate element node)))
 
 (defn portal
   "Render `element` in a DOM `node` that is ouside of current DOM hierarchy."
